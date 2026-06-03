@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.XR.Interaction.Toolkit;
+using TMPro;
 
 public class Scanner : UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable
 {
@@ -12,11 +13,15 @@ public class Scanner : UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabIn
         Renderer rend;
         Material[] originalMaterials;
         public Material highlightMaterial;
+        public TextMeshProUGUI targetName;
+        public TextMeshProUGUI targetPosition;
         protected override void Awake()
         {
                 base.Awake();
                 rend = GetComponent<Renderer>();
                 originalMaterials = rend.sharedMaterials;
+                targetName.gameObject.SetActive(false);
+                targetPosition.gameObject.SetActive(false);
                 laserRenderer.gameObject.SetActive(false);
         }
 
@@ -38,11 +43,28 @@ public class Scanner : UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabIn
         {
                 base.OnActivated(args);
                 laserRenderer.gameObject.SetActive(true);
+                targetName.gameObject.SetActive(true);
+                targetPosition.gameObject.SetActive(true);
+                // ScanForObjects();
+        }
+        private void ScanForObjects()
+        {
+                RaycastHit hit;
+                Vector3 worldHit = laserRenderer.transform.position + laserRenderer.transform.forward * 100f;
+                if (Physics.Raycast(laserRenderer.transform.position, targetName.transform.forward, out hit))
+                {
+                        worldHit = hit.point;
+                        targetName.SetText(hit.collider.gameObject.name);
+                        targetPosition.SetText(hit.collider.gameObject.transform.position.ToString());
+                }
+                laserRenderer.SetPosition(1, laserRenderer.transform.InverseTransformPoint(worldHit));
         }
         protected override void OnDeactivated(UnityEngine.XR.Interaction.Toolkit.DeactivateEventArgs args)
         {
                 base.OnDeactivated(args);
                 laserRenderer.gameObject.SetActive(false);
+                targetName.gameObject.SetActive(false);
+                targetPosition.gameObject.SetActive(false);
         }
         protected override void OnHoverEntered(HoverEnterEventArgs args)
         {
@@ -54,6 +76,14 @@ public class Scanner : UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabIn
         {
                 base.OnHoverExited(args);
                 rend.materials = originalMaterials;
+        }
+        public override void ProcessInteractable(XRInteractionUpdateOrder.UpdatePhase updatePhase)
+        {
+                base.ProcessInteractable(updatePhase);
+                if (laserRenderer.gameObject.activeSelf)
+                {
+                        ScanForObjects();
+                }
         }
 
 
